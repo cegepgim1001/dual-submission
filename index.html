@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Grade Submission Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9; /* stone-50 */
+            color: #44403c; /* stone-700 */
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+
+        /* Custom Scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f5f4; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a8a29e; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78716c; 
+        }
+
+        .step-active {
+            border-left-color: #d97706; /* amber-600 */
+            background-color: #fffbeb; /* amber-50 */
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <!-- Chosen Palette: Warm Stone & Amber (Minimalist, Academic, Calm) -->
+    <!-- Application Structure Plan: 
+         1. Header: Clear title and purpose.
+         2. "System at a Glance": A dashboard layout combining the 'System Overview' text with a Donut Chart visualization of the grading weights. This immediately grounds the user in the core rules.
+         3. "Interactive Workflow": A vertical stepper interface. The report outlines a 6-step process. Instead of a static list, users click through steps to see details, reducing cognitive load and turning the procedure into an actionable guide.
+         4. "Timeline & Deadlines": A distinct horizontal visual section to highlight critical dates (Submission vs. Retakes), separating temporal data from procedural data.
+         5. "Insights & Support": An accordion/card grid to handle the 'Qualitative' parts of the report (Concerns, Q&A, Support resources), making text-heavy content easier to digest.
+         RATIONALE: This structure separates the "What" (Weights), the "How" (Workflow), the "When" (Timeline), and the "But..." (Concerns), catering to different user needs (quick reference vs. deep learning).
+    -->
+    <!-- Visualization & Content Choices:
+         1. Grading Weights -> Goal: Inform -> Method: Donut Chart (Chart.js) -> Interaction: Hover for exact percentages. -> Justification: The 30/30/40 split is a proportional relationship best shown with a donut/pie chart.
+         2. Submission Steps -> Goal: Organize/Change -> Method: Interactive List (HTML/JS) -> Interaction: Click list item to update detail view. -> Justification: Steps are sequential; hiding details until requested keeps the UI clean.
+         3. Deadlines -> Goal: Inform -> Method: Styled HTML Flexbox Timeline -> Interaction: None (static visual reference). -> Justification: Simple linear progression needs no complex chart, just clear visual spacing.
+         4. Concerns -> Goal: Organize -> Method: Expandable Cards (HTML/JS) -> Interaction: Click to expand. -> Justification: Allows users to focus on concerns relevant to them without being overwhelmed by text.
+         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navigation / Header -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl font-bold text-stone-800 tracking-tight">Faculty<span class="text-amber-600">Portal</span></span>
+                <span class="hidden sm:inline-block h-6 w-px bg-stone-300"></span>
+                <span class="hidden sm:inline-block text-sm text-stone-500 font-medium">Grade Submission Training Hub</span>
+            </div>
+            <nav class="flex space-x-4">
+                <button onclick="scrollToSection('overview')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Overview</button>
+                <button onclick="scrollToSection('workflow')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Process</button>
+                <button onclick="scrollToSection('support')" class="text-sm font-medium text-stone-600 hover:text-amber-600 transition-colors">Support</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-12">
+
+        <!-- Intro Section -->
+        <section class="text-center max-w-3xl mx-auto">
+            <h1 class="text-4xl font-extrabold text-stone-800 mb-4">Final Grade Submission Guide</h1>
+            <p class="text-lg text-stone-600 leading-relaxed">
+                Welcome to the digital summary of the recent Faculty Portal training. 
+                This interactive guide synthesizes the key requirements, weightings, and workflows for submitting final grades effectively.
+                Explore the sections below to understand the dual-system requirement and the official grading breakdown.
+            </p>
+        </section>
+
+        <!-- System Overview & Grading Logic -->
+        <section id="overview" class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+            <div class="p-8 border-b border-stone-100">
+                <h2 class="text-2xl font-bold text-stone-800">System Overview & Grading Logic</h2>
+                <p class="mt-2 text-stone-500">Understanding the relationship between Blackboard, the Faculty Portal, and how grades are calculated.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 items-center">
+                <!-- Text Content -->
+                <div class="space-y-6">
+                    <div class="bg-stone-50 p-6 rounded-xl border-l-4 border-amber-500">
+                        <h3 class="font-bold text-lg text-stone-800 mb-2">The Dual-System Mandate</h3>
+                        <p class="text-stone-600">Faculty are required to submit grades in <strong>two distinct systems</strong>:</p>
+                        <ul class="mt-3 space-y-2 text-sm text-stone-700">
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1 text-amber-600 font-bold">&#10003;</span>
+                                <span><strong>Blackboard:</strong> Used primarily for ongoing student feedback throughout the term.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1 text-amber-600 font-bold">&#10003;</span>
+                                <span><strong>Faculty Portal / SIS:</strong> The official record for transcripts. This is where final calculation happens.</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-bold text-lg text-stone-800 mb-2">Automated Calculation</h3>
+                        <p class="text-stone-600 text-sm leading-relaxed">
+                            The portal simplifies the math. You enter raw scores (decimals allowed), and the system automatically applies the weightings shown in the chart to generate the final letter grade.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="flex flex-col items-center justify-center bg-stone-50 rounded-xl p-6">
+                    <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-4">Official Grade Weighting</h3>
+                    <div class="chart-container">
+                        <canvas id="weightingChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-xs text-stone-400 text-center">
+                        Scores entered into these three categories determine the student's final grade.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Workflow Step-by-Step -->
+        <section id="workflow">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-stone-800">Submission Workflow</h2>
+                <p class="text-stone-500 mt-2">Follow these 6 steps to successfully submit your grades. Click a step to view details.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Step Navigation -->
+                <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden" id="step-nav">
+                    <!-- Buttons generated by JS -->
+                </div>
+
+                <!-- Step Details Display -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-stone-200 p-8 flex flex-col justify-center min-h-[300px]">
+                    <div id="step-content" class="fade-in">
+                        <!-- Content injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline & Deadlines -->
+        <section class="bg-stone-800 text-stone-100 rounded-2xl shadow-lg p-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Critical Timeline</h2>
+                    <p class="text-stone-400 mt-1">Key dates for the current grading period.</p>
+                </div>
+                <div class="mt-4 md:mt-0 bg-stone-700 px-4 py-2 rounded-lg text-sm font-mono text-amber-400">
+                    Status: Grading Period Active
+                </div>
+            </div>
+
+            <div class="relative pt-6 pb-2">
+                <!-- Timeline Line -->
+                <div class="absolute top-1/2 left-0 w-full h-1 bg-stone-600 transform -translate-y-1/2 hidden md:block"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+                    <!-- Item 1 -->
+                    <div class="bg-stone-700 p-4 rounded-lg md:text-center shadow-md border border-stone-600 relative">
+                        <div class="hidden md:block absolute -top-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-amber-500 rounded-full border-4 border-stone-800"></div>
+                        <h3 class="text-amber-400 font-bold text-lg">Submission Deadline</h3>
+                        <p class="text-white font-semibold mt-1">End of Monday / Early Tuesday</p>
+                        <p class="text-xs text-stone-400 mt-2">Final grades must be in the portal.</p>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="bg-stone-700 p-4 rounded-lg md:text-center shadow-md border border-stone-600 relative">
+                        <div class="hidden md:block absolute -top-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-stone-400 rounded-full border-4 border-stone-800"></div>
+                        <h3 class="text-stone-300 font-bold text-lg">Retake Processing</h3>
+                        <p class="text-white font-semibold mt-1">Registrar Handled</p>
+                        <p class="text-xs text-stone-400 mt-2">Faculty do not grade retakes directly.</p>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="bg-stone-700 p-4 rounded-lg md:text-center shadow-md border border-stone-600 relative">
+                        <div class="hidden md:block absolute -top-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-stone-400 rounded-full border-4 border-stone-800"></div>
+                        <h3 class="text-stone-300 font-bold text-lg">Student Retakes</h3>
+                        <p class="text-white font-semibold mt-1">February 4th</p>
+                        <p class="text-xs text-stone-400 mt-2">For students who received 'F' grades.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Insights, Concerns & Support -->
+        <section id="support" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Key Concerns Panel -->
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                <h2 class="text-xl font-bold text-stone-800 mb-4 flex items-center">
+                    <span class="bg-red-100 text-red-600 p-2 rounded-lg mr-3 text-sm font-bold">!</span>
+                    Faculty Concerns & Discussion
+                </h2>
+                <p class="text-sm text-stone-500 mb-6">Summary of issues raised during the training session.</p>
+                
+                <div class="space-y-3" id="concerns-container">
+                    <!-- Dynamic Concerns items -->
+                </div>
+            </div>
+
+            <!-- Support Resources Panel -->
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 flex flex-col">
+                <h2 class="text-xl font-bold text-stone-800 mb-4 flex items-center">
+                    <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3 text-sm font-bold">?</span>
+                    Support Resources
+                </h2>
+                <p class="text-sm text-stone-500 mb-6">Need help? Use the following channels.</p>
+
+                <div class="flex-grow space-y-4">
+                    <div class="flex items-start p-4 bg-stone-50 rounded-lg border border-stone-100 hover:border-amber-200 transition-colors cursor-default">
+                        <div class="flex-shrink-0 text-2xl mr-4">&#128214;</div> <!-- Book icon -->
+                        <div>
+                            <h4 class="font-bold text-stone-800">PDF Guide</h4>
+                            <p class="text-sm text-stone-600">A step-by-step PDF manual is available for download.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start p-4 bg-stone-50 rounded-lg border border-stone-100 hover:border-amber-200 transition-colors cursor-default">
+                        <div class="flex-shrink-0 text-2xl mr-4">&#128104;&#8205;&#128187;</div> <!-- Tech support icon -->
+                        <div>
+                            <h4 class="font-bold text-stone-800">Help Desk</h4>
+                            <p class="text-sm text-stone-600">Available during the grading period (including weekends).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start p-4 bg-stone-50 rounded-lg border border-stone-100 hover:border-amber-200 transition-colors cursor-default">
+                        <div class="flex-shrink-0 text-2xl mr-4">&#128100;</div> <!-- User icon -->
+                        <div>
+                            <h4 class="font-bold text-stone-800">Instructor Rakshaeth</h4>
+                            <p class="text-sm text-stone-600">Point of contact for specific technical assistance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-100 border-t border-stone-200 mt-12 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-stone-500 text-sm">
+            <p>&copy; 2025 Faculty Portal Training Summary. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- DATA & STATE ---
+        const state = {
+            currentStep: 0
+        };
+
+        const workflowSteps = [
+            {
+                title: "1. Log In",
+                desc: "Access the system via portal.schiller.edu",
+                detail: "Use your standard institutional credentials to log into <strong>portal.schiller.edu</strong>. Ensure you are not already logged into a conflicting personal account.",
+                icon: "&#128272;" // Lock
+            },
+            {
+                title: "2. Navigate",
+                desc: "Go to My Classes > Gradebook",
+                detail: "Once on the dashboard, locate the <strong>'My Classes'</strong> tab in the main navigation. From the dropdown or sidebar, select <strong>'Gradebook'</strong>.",
+                icon: "&#129517;" // Compass
+            },
+            {
+                title: "3. Select Course",
+                desc: "Choose Term & Course",
+                detail: "Filter by the appropriate academic term (e.g., Fall 2024). Click on the specific course code you wish to grade to open its assessment view.",
+                icon: "&#128218;" // Books
+            },
+            {
+                title: "4. View Details",
+                desc: "Open Assessment Types",
+                detail: "You will see the three main categories (Continuous, Midterm, Final). Click the <strong>'View Details'</strong> button next to the category you are currently entering grades for.",
+                icon: "&#128065;" // Eye
+            },
+            {
+                title: "5. Enter Scores",
+                desc: "Input numeric values",
+                detail: "Enter the raw score for each student. <br><br><span class='bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold uppercase'>Note</span> Decimals are allowed. Ensure you are entering the score out of the correct total for that component.",
+                icon: "&#9997;" // Pencil
+            },
+            {
+                title: "6. Calculate",
+                desc: "Auto-generate Final Grades",
+                detail: "The system will automatically apply the 30/30/40 weighting logic to calculate the final percentage and assign the corresponding letter grade. Review all entries before navigating away.",
+                icon: "&#128202;" // Chart
+            }
+        ];
+
+        const concernsData = [
+            {
+                title: "Duplicate Work",
+                content: "<strong>Issue:</strong> Faculty must enter grades in both Blackboard and the Portal.<br><strong>Response:</strong> While time-consuming, the Portal is the legal record for transcripts, while Blackboard is for student feedback."
+            },
+            {
+                title: "Large Class Sizes",
+                content: "<strong>Issue:</strong> Manual entry is slow for large cohorts.<br><strong>Response:</strong> Faculty are encouraged to use the 'View Details' mode carefully to avoid transcription errors."
+            },
+            {
+                title: "Access Issues",
+                content: "<strong>Issue:</strong> Some faculty reported login failures.<br><strong>Response:</strong> Contact Instructor Rakshaeth or the Help Desk immediately if credentials fail."
+            },
+            {
+                title: "AI & Cheating",
+                content: "<strong>Issue:</strong> Questions regarding retake policies for students flagged for AI use.<br><strong>Response:</strong> Standard academic integrity policies apply to the retake exams on Feb 4th."
+            }
+        ];
+
+        // --- CHART GENERATION ---
+        function initCharts() {
+            const ctx = document.getElementById('weightingChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Final Exam', 'Continuous Assessment', 'Midterm'],
+                    datasets: [{
+                        label: 'Grade Weighting',
+                        data: [40, 30, 30],
+                        backgroundColor: [
+                            '#d97706', // amber-600
+                            '#78716c', // stone-500
+                            '#a8a29e'  // stone-400
+                        ],
+                        hoverOffset: 4,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 12
+                                },
+                                usePointStyle: true,
+                                color: '#57534e'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: ${context.raw}%`;
+                                }
+                            },
+                            backgroundColor: '#fff',
+                            titleColor: '#1c1917',
+                            bodyColor: '#44403c',
+                            borderColor: '#e7e5e4',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderSteps() {
+            const navContainer = document.getElementById('step-nav');
+            navContainer.innerHTML = '';
+
+            workflowSteps.forEach((step, index) => {
+                const btn = document.createElement('button');
+                const isActive = index === state.currentStep;
+                
+                btn.className = `w-full text-left px-6 py-4 border-l-4 transition-all duration-200 flex items-center group ${
+                    isActive 
+                    ? 'step-active' 
+                    : 'border-transparent hover:bg-stone-50 hover:border-stone-300'
+                }`;
+                
+                btn.onclick = () => setStep(index);
+
+                btn.innerHTML = `
+                    <div class="mr-4 text-xl ${isActive ? 'text-amber-600' : 'text-stone-400 group-hover:text-stone-600'}">
+                        ${step.icon}
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold ${isActive ? 'text-stone-800' : 'text-stone-600'}">${step.title}</div>
+                        <div class="text-xs ${isActive ? 'text-stone-600' : 'text-stone-400'}">${step.desc}</div>
+                    </div>
+                `;
+                navContainer.appendChild(btn);
+            });
+
+            renderStepContent(state.currentStep);
+        }
+
+        function renderStepContent(index) {
+            const contentContainer = document.getElementById('step-content');
+            const step = workflowSteps[index];
+            
+            // Remove animation class to trigger reflow
+            contentContainer.classList.remove('fade-in');
+            void contentContainer.offsetWidth; // Trigger reflow
+            contentContainer.classList.add('fade-in');
+
+            contentContainer.innerHTML = `
+                <div class="flex items-center mb-6">
+                    <span class="text-4xl mr-4">${step.icon}</span>
+                    <h3 class="text-3xl font-bold text-stone-800">${step.title}</h3>
+                </div>
+                <div class="bg-stone-50 p-6 rounded-lg border border-stone-200">
+                    <p class="text-lg text-stone-700 leading-relaxed">${step.detail}</p>
+                </div>
+                <div class="mt-8 flex justify-between">
+                    <button onclick="changeStep(-1)" class="text-stone-500 hover:text-stone-800 disabled:opacity-30 disabled:cursor-not-allowed font-medium" ${index === 0 ? 'disabled' : ''}>
+                        &larr; Previous Step
+                    </button>
+                    <button onclick="changeStep(1)" class="text-amber-600 hover:text-amber-800 disabled:opacity-30 disabled:cursor-not-allowed font-bold" ${index === workflowSteps.length - 1 ? 'disabled' : ''}>
+                        Next Step &rarr;
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderConcerns() {
+            const container = document.getElementById('concerns-container');
+            
+            concernsData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'border border-stone-200 rounded-lg overflow-hidden';
+                div.innerHTML = `
+                    <button class="w-full text-left px-4 py-3 bg-stone-50 hover:bg-stone-100 flex justify-between items-center transition-colors" onclick="toggleConcern(${index})">
+                        <span class="font-semibold text-stone-700">${item.title}</span>
+                        <span id="icon-${index}" class="text-stone-400 text-sm transform transition-transform duration-200">&#9660;</span>
+                    </button>
+                    <div id="content-${index}" class="hidden bg-white p-4 text-sm text-stone-600 border-t border-stone-100">
+                        ${item.content}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- INTERACTION HANDLERS ---
+        function setStep(index) {
+            state.currentStep = index;
+            renderSteps();
+        }
+
+        function changeStep(direction) {
+            const newIndex = state.currentStep + direction;
+            if (newIndex >= 0 && newIndex < workflowSteps.length) {
+                setStep(newIndex);
+            }
+        }
+
+        function toggleConcern(index) {
+            const content = document.getElementById(`content-${index}`);
+            const icon = document.getElementById(`icon-${index}`);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            renderSteps();
+            renderConcerns();
+        });
+
+    </script>
+</body>
+</html>
+
+
+
